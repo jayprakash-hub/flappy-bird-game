@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flappy Bird Pro</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+        background: linear-gradient(#4ec0ca, #b3e5fc);
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .container {
+        position: relative;
+    }
+
+    canvas {
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        background: linear-gradient(#70c5ce, #d0f4f7);
+    }
+
+    .title {
+        position: absolute;
+        top: -40px;
+        width: 100%;
+        text-align: center;
+        color: white;
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="title">PRESS SPACE / CLICK TO FLY</div>
+    <canvas id="game" width="400" height="600"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+/* ✅ FIXED BIRD SPEED */
+let bird = {
+    x: 80,
+    y: 250,
+    radius: 15,
+    velocity: 0,
+    gravity: 0.4,   // ⬅ slower fall
+    lift: -7        // ⬅ controlled jump
+};
+
+let pipes = [];
+let gap = 170;
+let frame = 0;
+let score = 0;
+let gameOver = false;
+
+function drawBird() {
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#FFD400";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(bird.x + 6, bird.y - 4, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "#000";
+    ctx.fill();
+}
+
+function drawPipes() {
+    pipes.forEach(p => {
+        let gradient = ctx.createLinearGradient(p.x, 0, p.x + 60, 0);
+        gradient.addColorStop(0, "#2ecc71");
+        gradient.addColorStop(1, "#27ae60");
+        ctx.fillStyle = gradient;
+
+        ctx.fillRect(p.x, 0, 60, p.top);
+        ctx.fillRect(p.x, p.bottom, 60, canvas.height);
+    });
+}
+
+function updatePipes() {
+    if (frame % 100 === 0) {   // ⬅ pipes thode late aayenge
+        let top = Math.random() * 220 + 40;
+        pipes.push({
+            x: canvas.width,
+            top: top,
+            bottom: top + gap,
+            passed: false
+        });
+    }
+
+    pipes.forEach(p => {
+        p.x -= 1.5;   // ⬅ pipe speed slow
+
+        if (!p.passed && p.x + 60 < bird.x) {
+            score++;
+            p.passed = true;
+        }
+
+        if (
+            bird.x + bird.radius > p.x &&
+            bird.x - bird.radius < p.x + 60 &&
+            (bird.y - bird.radius < p.top || bird.y + bird.radius > p.bottom)
+        ) {
+            gameOver = true;
+        }
+    });
+
+    pipes = pipes.filter(p => p.x + 60 > 0);
+}
+
+function drawGround() {
+    ctx.fillStyle = "#ded895";
+    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+}
+
+function drawScore() {
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText("Score: " + score, 15, 35);
+}
+
+function drawGameOver() {
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 36px Arial";
+    ctx.fillText("GAME OVER", 85, 270);
+
+    ctx.font = "18px Arial";
+    ctx.fillText("Click or Space to Restart", 90, 310);
+}
+
+function resetGame() {
+    bird.y = 250;
+    bird.velocity = 0;
+    pipes = [];
+    score = 0;
+    frame = 0;
+    gameOver = false;
+}
+
+function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    bird.velocity += bird.gravity;
+    bird.y += bird.velocity;
+
+    updatePipes();
+    drawPipes();
+    drawBird();
+    drawGround();
+    drawScore();
+
+    if (bird.y + bird.radius > canvas.height - 40 || bird.y - bird.radius < 0) {
+        gameOver = true;
+    }
+
+    if (gameOver) {
+        drawGameOver();
+        return;
+    }
+
+    frame++;
+    requestAnimationFrame(update);
+}
+
+function flap() {
+    if (!gameOver) {
+        bird.velocity = bird.lift;
+    } else {
+        resetGame();
+        update();
+    }
+}
+
+document.addEventListener("keydown", e => {
+    if (e.code === "Space") flap();
+});
+
+canvas.addEventListener("click", flap);
+
+update();
+</script>
+
+</body>
+</html>
