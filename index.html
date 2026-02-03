@@ -3,64 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <title>Flappy Bird Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Segoe UI', sans-serif;
-    }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
 
-    body {
-        background: linear-gradient(#4ec0ca, #b3e5fc);
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+body {
+    background: linear-gradient(#4ec0ca, #b3e5fc);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
 
-    .container {
-        position: relative;
-    }
+.container {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
 
-    canvas {
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        background: linear-gradient(#70c5ce, #d0f4f7);
-    }
+canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    background: linear-gradient(#70c5ce, #d0f4f7);
+    touch-action: none;
+}
 
-    .title {
-        position: absolute;
-        top: -40px;
-        width: 100%;
-        text-align: center;
-        color: white;
-        font-size: 18px;
-        letter-spacing: 1px;
-    }
+.title {
+    color: white;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-    <div class="title">PRESS SPACE / CLICK TO FLY</div>
-    <canvas id="game" width="400" height="600"></canvas>
+    <div class="title">TAP / CLICK / SPACE TO FLY</div>
+    <canvas id="game"></canvas>
 </div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-/* ✅ FIXED BIRD SPEED */
+/* 📱 Responsive canvas */
+function resizeCanvas() {
+    const scale = window.devicePixelRatio || 1;
+    const width = Math.min(window.innerWidth * 0.95, 400);
+    const height = Math.min(window.innerHeight * 0.75, 600);
+
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+/* 🐦 Bird */
 let bird = {
     x: 80,
     y: 250,
     radius: 15,
     velocity: 0,
-    gravity: 0.4,   // ⬅ slower fall
-    lift: -7        // ⬅ controlled jump
+    gravity: 0.4,
+    lift: -7
 };
 
 let pipes = [];
@@ -76,25 +95,21 @@ function drawBird() {
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(bird.x + 6, bird.y - 4, 3, 0, Math.PI * 2);
+    ctx.arc(bird.x + 5, bird.y - 4, 3, 0, Math.PI * 2);
     ctx.fillStyle = "#000";
     ctx.fill();
 }
 
 function drawPipes() {
     pipes.forEach(p => {
-        let gradient = ctx.createLinearGradient(p.x, 0, p.x + 60, 0);
-        gradient.addColorStop(0, "#2ecc71");
-        gradient.addColorStop(1, "#27ae60");
-        ctx.fillStyle = gradient;
-
+        ctx.fillStyle = "#2ecc71";
         ctx.fillRect(p.x, 0, 60, p.top);
         ctx.fillRect(p.x, p.bottom, 60, canvas.height);
     });
 }
 
 function updatePipes() {
-    if (frame % 100 === 0) {   // ⬅ pipes thode late aayenge
+    if (frame % 100 === 0) {
         let top = Math.random() * 220 + 40;
         pipes.push({
             x: canvas.width,
@@ -105,7 +120,7 @@ function updatePipes() {
     }
 
     pipes.forEach(p => {
-        p.x -= 1.5;   // ⬅ pipe speed slow
+        p.x -= 1.5;
 
         if (!p.passed && p.x + 60 < bird.x) {
             score++;
@@ -131,8 +146,8 @@ function drawGround() {
 
 function drawScore() {
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 24px Arial";
-    ctx.fillText("Score: " + score, 15, 35);
+    ctx.font = "bold 22px Arial";
+    ctx.fillText("Score: " + score, 15, 30);
 }
 
 function drawGameOver() {
@@ -140,15 +155,15 @@ function drawGameOver() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 36px Arial";
-    ctx.fillText("GAME OVER", 85, 270);
+    ctx.font = "bold 32px Arial";
+    ctx.fillText("GAME OVER", canvas.width / 2 - 100, canvas.height / 2 - 10);
 
-    ctx.font = "18px Arial";
-    ctx.fillText("Click or Space to Restart", 90, 310);
+    ctx.font = "16px Arial";
+    ctx.fillText("Tap to Restart", canvas.width / 2 - 55, canvas.height / 2 + 25);
 }
 
 function resetGame() {
-    bird.y = 250;
+    bird.y = canvas.height / 2;
     bird.velocity = 0;
     pipes = [];
     score = 0;
@@ -195,7 +210,12 @@ document.addEventListener("keydown", e => {
 });
 
 canvas.addEventListener("click", flap);
+canvas.addEventListener("touchstart", e => {
+    e.preventDefault();
+    flap();
+});
 
+resetGame();
 update();
 </script>
 
